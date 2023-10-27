@@ -46,7 +46,7 @@ This is a simple implementation of the classic card game BlackJack using clean J
 5. Run migrations:
 
    ```
-   db:migrate:local
+   yarn db:migrate:local
    ```
    
 6. Start the server:
