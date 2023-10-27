@@ -1,0 +1,31 @@
+{
+  "name": "black-jack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon --delay 1 --inspect=9293 ./src/index.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "db:migrate:local": "node src/migrations/run-migrations.js local",
+    "db:migrate:production": "node src/migrations/run-migrations.js production us-east-1"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1"
+  },
+  "jest": {
+    "testRegex": ".*\\.test\\.js$"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1481.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.1"
+  }
+}
