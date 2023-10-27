@@ -145,6 +145,27 @@ export class PlayerService {
   }
 
   /**
+   * Update player's totalGamesFinished score.
+   * @param {string} playerEmail - The email address of the winning player.
+   * @returns {PlayerEntity} - The updated player entity.
+   */
+  async finished(playerEmail) {
+    if (!this._player) await this.loadPlayerByEmail(playerEmail)
+
+    const player = this._repo.clone(this._player)
+
+    player.score.totalGameFinished += 1
+
+    await this._repo.update(player)
+
+    Object.freeze(player)
+
+    this._player = player
+
+    return this.player
+  }
+
+  /**
    * Mark the player as a loser and update their score.
    * @param {string} playerEmail - The email address of the losing player.
    * @returns {PlayerEntity} - The updated player entity.
