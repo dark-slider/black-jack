@@ -325,11 +325,9 @@ export class MainController {
         // Mark the dealer as the winner
         result.winnerIds = ['dealer']
       } else {
-
         if (maxTotal === dealerTotal && game.dealerCards.length === maxCardsTotal) {
           for (const player of possibleWinners) {
-            await this.playerService.win(player.email)
-            result.winnerIds.push(player.id)
+            await this.playerService.finished(player.email)
           }
           result.winnerIds.push('no-winner')
         } else {
