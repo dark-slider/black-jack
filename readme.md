@@ -24,7 +24,7 @@ This is a simple implementation of the classic card game BlackJack using clean J
 2. Install dependencies:
 
    ```
-   npm install
+   yarn
    ```
 
 3. Set up environment variables:
@@ -37,10 +37,22 @@ This is a simple implementation of the classic card game BlackJack using clean J
     SECRET_KEY=abrakedabra
    ```
 
-4. Start the server:
+4. Create database:
+   
+   ```
+   docker compose up -d
+   ```
+
+5. Run migrations:
 
    ```
-   npm start
+   db:migrate:local
+   ```
+   
+6. Start the server:
+
+   ```
+   yarn start
    ```
 
 The server will run on `http://localhost:4442`.
