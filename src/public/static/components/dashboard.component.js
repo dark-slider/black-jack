@@ -22,8 +22,6 @@ const dashboardComponent = async () => {
     return
   }
 
-  console.log(player.me)
-
   const { data: gamesList } = await sendRequest.get('/api/games-list')
 
   return `

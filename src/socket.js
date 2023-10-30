@@ -43,8 +43,7 @@ export const initializeSocket = server => {
       jwt.verify(token, settings.secretKey, async (err, decoded) => {
         if (!err) {
           const req = {
-            player: await mainController.playerService.loadPlayerByEmail(decoded.email),
-            isSocket: true
+            player: await mainController.playerService.loadPlayerByEmail(decoded.email)
           }
 
           await mainController.leaveGame(req, {})

@@ -85,8 +85,8 @@ export class MainController {
    * @param {Object} res - The HTTP response object.
    */
   async getGameState(req, res) {
-    const { player, query, isSocket = false } = req
     try {
+      const { player, query } = req
       const { gameId } = query
 
       // Check if a player is found in the request
@@ -121,9 +121,9 @@ export class MainController {
 
       emitToGame(gameId, result)
 
-      !isSocket && res.json(result)
+      res && res.json(result)
     } catch (error) {
-      !isSocket && res.status(400).json({ message: error.message })
+      res && res.status(400).json({ message: error.message })
     }
   }
 
@@ -315,8 +315,8 @@ export class MainController {
    * @param {Object} res - The HTTP response object.
    */
   async dealerTurn(req, res) {
-    const { body, isSocket = false } = req
     try {
+      const { body } = req
       const { gameId } = body
 
       // Load the game with the specified game ID
@@ -396,9 +396,9 @@ export class MainController {
 
       emitToGame(gameId, result)
 
-      !isSocket && res.json(result)
+      res && res.json(result)
     } catch (error) {
-      !isSocket && res.status(400).json({ message: error.message })
+      res && res.status(400).json({ message: error.message })
     }
   }
 
@@ -451,9 +451,8 @@ export class MainController {
    * @param {Object} res - The HTTP response object.
    */
   async leaveGame(req, res) {
-    const { player, isSocket = false } = req
-
     try {
+      const { player } = req
       // Check if a player is found in the request
       if (!player) throw new Error('Player not found')
 
@@ -500,7 +499,7 @@ export class MainController {
 
       return this.getGameState(req, res)
     } catch (error) {
-      !isSocket && res.status(400).json({ message: error.message })
+      res && res.status(400).json({ message: error.message })
     }
   }
 }

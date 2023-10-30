@@ -80,18 +80,16 @@ const gameComponent = async () => {
 
     let i = 20
 
-    // if (gameData.playerIdTurn) {
-    //   timeout = setTimeout(() => {
-    //     onLeaveGame()
-    //   }, 20000)
-    //
-    //   interval = setInterval(() => {
-    //     i--
-    //     document.getElementById(`timer-${gameData.playerIdTurn}`).innerHTML = i.toString()
-    //   }, 1000)
-    // }
+    if (gameData.playerIdTurn) {
+      timeout = setTimeout(() => {
+        onLeaveGame()
+      }, 20000)
 
-    console.log(player)
+      interval = setInterval(() => {
+        i--
+        document.getElementById(`timer-${gameData.playerIdTurn}`).innerHTML = i.toString()
+      }, 1000)
+    }
 
     return `
 <div class="layout">
