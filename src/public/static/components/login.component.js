@@ -22,6 +22,7 @@ const onLogin = async () => {
 
 const loginComponent = () => `
 <div class="layout">
+    <p class="header">Log in</p>
     <div>
         <input placeholder="Email:" id="loginInput">
         <button class="primary" onclick="onLogin()">Login</button>

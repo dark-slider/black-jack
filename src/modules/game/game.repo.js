@@ -116,6 +116,36 @@ export class GameRepo {
   }
 
   /**
+   * Retrieve all games from the database.
+   * @returns {Array} - An array of GameEntity objects representing the games.
+   */
+  async findAll() {
+    const { Items } = await this.client
+      .scan({
+        TableName,
+        ProjectionExpression: 'id'
+      })
+      .promise()
+
+    const games = []
+
+    if (!Items) return []
+    if (!Items.length) return []
+
+    for (const game of Items) {
+      const newGame = new GameEntity(game.id)
+      newGame.deck = game.deck
+      newGame.dealerCards = game.dealerCards
+      newGame.playerIdTurn = game.playerIdTurn
+      newGame.winnerIds = game.winnerIds
+
+      games.push(game)
+    }
+
+    return games
+  }
+
+  /**
    * Clone a game entity, creating a new instance with the same attributes.
    * @param {GameEntity} game - The game entity to be cloned.
    * @returns {GameEntity} - A new game entity with the same attributes as the original.

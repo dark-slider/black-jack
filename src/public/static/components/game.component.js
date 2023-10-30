@@ -1,7 +1,12 @@
+let interval
+let timeout
+
 const onLeaveGame = async () => {
-  const { data } = await sendRequest.post('/api/leave-game')
-  player.setMe(data)
+  await sendRequest.post('/api/leave-game')
+  await player.getMe()
   game.leaveGame()
+  clearTimeout(timeout)
+  clearInterval(interval)
   window.location.hash = routes.dashboard
 }
 
@@ -69,7 +74,26 @@ const gameComponent = async () => {
     `
   }
 
-  const render = (gameData) => `
+  const render = (gameData) => {
+    clearTimeout(timeout)
+    clearInterval(interval)
+
+    let i = 20
+
+    // if (gameData.playerIdTurn) {
+    //   timeout = setTimeout(() => {
+    //     onLeaveGame()
+    //   }, 20000)
+    //
+    //   interval = setInterval(() => {
+    //     i--
+    //     document.getElementById(`timer-${gameData.playerIdTurn}`).innerHTML = i.toString()
+    //   }, 1000)
+    // }
+
+    console.log(player)
+
+    return `
 <div class="layout">
     <div class="dashboard">
         ${gameData.readyToDeal ? '<button class="primary" onclick="onDeal()">Deal</button>' : ''}
@@ -82,19 +106,25 @@ const gameComponent = async () => {
             <p>Cards:</p>
             ${renderCards(gameData.dealerCards)}
         </div>
-        ${gameData.players.map(player => `
-            <div class="playerCard">
-                <p>Name: ${player.email} ${gameData.winnerIds.includes(player.id) ? '<span style="color: green">Winner</span>' : ''}</p>
-                <p>Total: <span ${player.total > 21 ? 'style="color: red"' : ''}>${player.total}</span></p>
+        ${gameData.players.map(currentPlayer => `
+            <div class="playerCard" id="${currentPlayer.id}">
+                <p>Name: ${currentPlayer.email} ${gameData.winnerIds.includes(currentPlayer.id) ? '<span style="color: green">Winner</span>' : ''}</p>
+                <p>Total: <span ${currentPlayer.total > 21 ? 'style="color: red"' : ''}>${currentPlayer.total}</span></p>
+                <p>${currentPlayer.currentGamePosition}</p>
                 <p>Cards:</p>
-                ${renderCards(player.cards)}
-                ${player.id === gameData.playerIdTurn
+                ${renderCards(currentPlayer.cards)}
+                ${currentPlayer.id === gameData.playerIdTurn && currentPlayer.id === player.me.id
                   ? `
                     <div class="playerButtons">
                         <button class="primary" onclick="onHit()">Hit</button>
                         <button class="warning" onclick="onStand()">Stand</button>
                     </div>
+                    <p class="timer">You will leave in: <span id="timer-${currentPlayer.id}">${i}</span></p>
                   `
+                  : ''
+                }
+                ${currentPlayer.id === gameData.playerIdTurn && currentPlayer.id !== player.me.id
+                  ?  `<p class="timer">...thinking</p>`
                   : ''
                 }
             </div>
@@ -103,6 +133,7 @@ const gameComponent = async () => {
     }
 </div>
 `
+  }
   game.setRender(render)
 
   return render(game.data)

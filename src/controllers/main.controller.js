@@ -1,5 +1,5 @@
 import { GameService, PlayerService } from '../modules/index.js'
-import { generateJwt, validation } from '../utils/index.js'
+import { generateJwt } from '../utils/index.js'
 import { emitToGame } from '../socket.js'
 
 export class MainController {
@@ -30,12 +30,34 @@ export class MainController {
    * @param {Object} req - The HTTP request object.
    * @param {Object} res - The HTTP response object.
    */
-  getMe (req, res) {
-    const { player } = req
+  getMe(req, res) {
+    try {
+      const {player} = req
 
-    if (!player) throw new Error('Player not found')
+      if (!player) throw new Error('Player not found')
 
-    res.json(player)
+      res.json(player)
+    } catch(error) {
+      res.status(400).json({ message: error.message })
+    }
+  }
+
+  /**
+   * Retrieve a list of games.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   */
+  async gamesList(req, res) {
+    try {
+      // Call the gameService to fetch the list of games
+      const list = await this.gameService.gamesList()
+
+      // Return the list of games as a JSON response
+      return res.json(list)
+    } catch(error) {
+      // If there's an error, return a 400 status with the error message
+      res.status(400).json({ message: error.message })
+    }
   }
 
   /**
@@ -63,8 +85,8 @@ export class MainController {
    * @param {Object} res - The HTTP response object.
    */
   async getGameState(req, res) {
+    const { player, query, isSocket = false } = req
     try {
-      const { player, query } = req
       const { gameId } = query
 
       // Check if a player is found in the request
@@ -75,7 +97,8 @@ export class MainController {
 
       // Load the game and players associated with it
       const game = await this.gameService.loadPublicGame(gameId)
-      const players = await this.playerService.findGameMembers(gameId)
+      let players = await this.playerService.findGameMembers(gameId)
+      players = players.sort((a, b) => a.currentGamePosition - b.currentGamePosition)
 
       // Calculate player totals and game state
       const playersResult = []
@@ -96,13 +119,11 @@ export class MainController {
         readyToDeal: !game.dealerCards.length || !game.playerIdTurn
       }
 
-      if (game.dealerCards.length) {
-        emitToGame(gameId, result)
-      }
+      emitToGame(gameId, result)
 
-      res.json(result)
+      !isSocket && res.json(result)
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      !isSocket && res.status(400).json({ message: error.message })
     }
   }
 
@@ -113,7 +134,8 @@ export class MainController {
    */
   async startGame(req, res) {
     try {
-      const { player } = req
+      const { player, body } = req
+      const { gameId } = body
 
       // Check if a player is found in the request
       if (!player) throw new Error('Player not found')
@@ -124,17 +146,37 @@ export class MainController {
       // Build the player from source data
       this.playerService.buildFromSource(player)
 
-      // Create a new game
-      const game = await this.gameService.createNewGame()
+      let game
+      let gamePosition = 1
+
+      if (gameId) {
+        game = await this.gameService.loadGame(gameId)
+        const players = await this.playerService.findGameMembers(gameId)
+        const lastPlayer = players.sort((a, b) => b.currentGamePosition - a.currentGamePosition)[0]
+        gamePosition = lastPlayer.currentGamePosition + 1
+      } else {
+        // Create a new game
+        game = await this.gameService.createNewGame()
+      }
 
       // Start the game for the player
-      await this.playerService.startGame({ gameId: game.id, gamePosition: 1 })
+      await this.playerService.startGame({ gameId: game.id, gamePosition })
 
-      // Assign the current player's turn
-      await this.gameService.assignCurrentPlayerTurn({
-        gameId: game.id,
-        playerId: player.id
-      })
+      if (!gameId) {
+        // Assign the current player's turn
+        await this.gameService.assignCurrentPlayerTurn({
+          gameId: game.id,
+          playerId: player.id
+        })
+      }
+
+      if (game.playerIdTurn && game.dealerCards.length) {
+        const cards = await this.gameService.getTwoCards({ gameId })
+
+        for (const card of cards) {
+          await this.playerService.takeCard({ card, gameId })
+        }
+      }
 
       req.player = this.playerService.player
       req.query.gameId = game.id
@@ -165,7 +207,7 @@ export class MainController {
       const players = await this.playerService.findGameMembers(gameId)
 
       // Find the player with the highest game position (first player to be dealt)
-      const firstPlayer = players.sort((a, b) => b.currentGamePosition - a.currentGamePosition)[0]
+      const firstPlayer = players.sort((a, b) => a.currentGamePosition - b.currentGamePosition)[0]
 
       // Deal cards to players and get the dealt cards for each player
       const playersCards = await this.gameService.deal({
@@ -273,8 +315,8 @@ export class MainController {
    * @param {Object} res - The HTTP response object.
    */
   async dealerTurn(req, res) {
+    const { body, isSocket = false } = req
     try {
-      const { body } = req
       const { gameId } = body
 
       // Load the game with the specified game ID
@@ -310,13 +352,13 @@ export class MainController {
       const {
         possibleWinners,
         maxTotal,
-        maxCardsTotal
+        minCardsTotal
       } = this.gameService.getPossibleWinners(players)
 
       // Check if the dealer wins or if there are player winners
       if (
         dealerTotal <= 21 &&
-        (maxTotal < dealerTotal || (maxTotal === dealerTotal && game.dealerCards.length < maxCardsTotal))
+        (maxTotal < dealerTotal || (maxTotal === dealerTotal && game.dealerCards.length < minCardsTotal))
       ) {
         for (const player of possibleWinners) {
           await this.playerService.lose(player.email)
@@ -325,7 +367,7 @@ export class MainController {
         // Mark the dealer as the winner
         result.winnerIds = ['dealer']
       } else {
-        if (maxTotal === dealerTotal && game.dealerCards.length === maxCardsTotal) {
+        if (maxTotal === dealerTotal && game.dealerCards.length === minCardsTotal) {
           for (const player of possibleWinners) {
             await this.playerService.finished(player.email)
           }
@@ -354,9 +396,9 @@ export class MainController {
 
       emitToGame(gameId, result)
 
-      res.json(result)
+      !isSocket && res.json(result)
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      !isSocket && res.status(400).json({ message: error.message })
     }
   }
 
@@ -381,7 +423,7 @@ export class MainController {
       players = players.sort((a, b) => a.currentGamePosition - b.currentGamePosition)
 
       // Find the index of the current player
-      const currentPlayerIndex = players.find(item => item.currentGamePosition === player.currentGamePosition)
+      const currentPlayerIndex = players.findIndex(item => item.currentGamePosition === player.currentGamePosition)
       const nextPlayer = players[currentPlayerIndex + 1]
 
       // If there is a next player, assign the turn to them; otherwise, proceed to the dealer's turn
@@ -393,6 +435,9 @@ export class MainController {
       } else {
         return this.dealerTurn(req, res)
       }
+
+      req.player = this.playerService.player
+      req.query.gameId = gameId
 
       await this.getGameState(req, res)
     } catch (error) {
@@ -406,9 +451,9 @@ export class MainController {
    * @param {Object} res - The HTTP response object.
    */
   async leaveGame(req, res) {
-    try {
-      const { player } = req
+    const { player, isSocket = false } = req
 
+    try {
       // Check if a player is found in the request
       if (!player) throw new Error('Player not found')
 
@@ -423,33 +468,39 @@ export class MainController {
       players = players.sort((a, b) => a.currentGamePosition - b.currentGamePosition)
 
       // Find the index of the current player
-      const currentPlayerIndex = players.find(item => item.currentGamePosition === player.currentGamePosition)
+      const currentPlayerIndex = players.findIndex(item => item.currentGamePosition === player.currentGamePosition)
       const nextPlayer = players[currentPlayerIndex + 1]
 
       // Leave the current game and remove the player from the players list
       await this.playerService.leaveGame()
-      delete players[currentPlayerIndex]
+      players = players.filter(item => item.id !== player.id)
 
       // If no players are left in the game, remove the game
       if (!players.length && gameId) {
         await this.gameService.removeGame(gameId)
+
+        return res.json({ gameId: null })
       }
 
       // If there are remaining players and a game, assign the next player's turn
       if (players.length && gameId) {
-        if (nextPlayer) {
+        if (nextPlayer && player.id === this.gameService.game.playerIdTurn) {
           await this.gameService.assignCurrentPlayerTurn({
             gameId,
             playerId: nextPlayer.id
           })
         } else {
+          req.body.gameId = gameId
 
+          return await this.dealerTurn(req, res)
         }
       }
 
-      res.json(this.playerService.player)
+      req.query.gameId = gameId
+
+      return this.getGameState(req, res)
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      !isSocket && res.status(400).json({ message: error.message })
     }
   }
 }

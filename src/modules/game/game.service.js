@@ -15,6 +15,14 @@ export class GameService {
   }
 
   /**
+   * Fetch the list of all games.
+   * @returns {Array} - An array of all games from the repository.
+   */
+  async gamesList() {
+    return await this._repo.findAll()
+  }
+
+  /**
    * Get a public representation of the current game.
    * @returns {Object} - A simplified game object with limited information.
    */
@@ -192,6 +200,32 @@ export class GameService {
   }
 
   /**
+   * Retrieve two cards from the game deck for a specific game.
+   * @param {Object} param0 - An object containing the gameId.
+   * @param {string} param0.gameId - The ID of the game.
+   * @returns {Array} - An array containing two cards from the game deck.
+   */
+  async getTwoCards({ gameId }) {
+    if (!this._game) await this.loadGame(gameId)
+
+    const game = this._repo.clone(this._game)
+
+    const playersCards = []
+
+    for (let i = 0; i < 2; i ++) {
+      playersCards.push(game.deck.shift())
+    }
+
+    await this._repo.update(game)
+
+    Object.freeze(game)
+
+    this._game = game
+
+    return playersCards
+  }
+
+  /**
    * Draw a card for a player in the game.
    * @param {Object} options - Object containing the game ID and player's current cards.
    * @param {string} options.gameId - The ID of the game to draw a card in.
@@ -266,18 +300,18 @@ export class GameService {
 
     playerResults = playerResults.filter(player => player.total <= 21)
     const maxTotal = Math.max(...playerResults.map(item => item.total))
-    const maxCardsTotal = Math.max(...playerResults.map(item => item.cardsTotal))
+    const minCardsTotal = Math.min(...playerResults.map(item => item.cardsTotal))
 
     let possibleWinners = playerResults.filter(player => player.total === maxTotal)
 
     if (possibleWinners.length > 1) {
-      possibleWinners = possibleWinners.filter(player => player.cardsTotal === maxCardsTotal)
+      possibleWinners = possibleWinners.filter(player => player.cardsTotal === minCardsTotal)
     }
 
     return {
       possibleWinners,
       maxTotal,
-      maxCardsTotal
+      minCardsTotal
     }
   }
 

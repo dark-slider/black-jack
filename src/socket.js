@@ -1,8 +1,10 @@
 import { Server } from 'socket.io'
 import jwt from 'jsonwebtoken'
+import { MainController } from './controllers/index.js'
 import { settings } from './settings.js'
 
 let io
+const mainController = new MainController()
 
 export const initializeSocket = server => {
   io = new Server(server)
@@ -14,7 +16,7 @@ export const initializeSocket = server => {
       return next(new Error('Unauthorized'))
     }
 
-    jwt.verify(token, settings.secretKey, async (err, decoded) => {
+    jwt.verify(token, settings.secretKey, (err) => {
       if (err) {
         return next(new Error('Invalid token'))
       }
@@ -37,6 +39,17 @@ export const initializeSocket = server => {
     })
 
     socket.on('disconnect', () => {
+      const { token } = socket.handshake.auth
+      jwt.verify(token, settings.secretKey, async (err, decoded) => {
+        if (!err) {
+          const req = {
+            player: await mainController.playerService.loadPlayerByEmail(decoded.email),
+            isSocket: true
+          }
+
+          await mainController.leaveGame(req, {})
+        }
+      })
       console.log('User disconnected.')
     })
   })

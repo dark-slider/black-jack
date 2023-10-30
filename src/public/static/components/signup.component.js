@@ -22,6 +22,7 @@ const onSignup = async () => {
 
 const signupComponent = () => `
 <div class="layout">
+    <p class="header">Sign up</p>
     <div>
         <input placeholder="Email:" id="signupInput">
         <button class="primary" onclick="onSignup()">Sign Up</button>

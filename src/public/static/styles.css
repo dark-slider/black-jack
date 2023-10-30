@@ -26,6 +26,11 @@ p {
     gap: 10px;
 }
 
+.gameDashboard {
+    flex-direction: column;
+    margin-bottom: 10px;
+}
+
 .layout {
     padding: 20px;
     border-radius: 10px;
@@ -129,4 +134,19 @@ a {
     display: flex;
     gap: 10px;
     margin-top: 10px;
+}
+
+.timer {
+    margin-top: 10px;
+}
+
+.timer span {
+    font-weight: bold;
+}
+
+.header {
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    margin-bottom: 10px;
 }

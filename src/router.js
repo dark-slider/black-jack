@@ -28,6 +28,7 @@ export const router = (app) => {
   app.post('/auth/login', mainController.login.bind(mainController))
   app.post('/auth/signup', mainController.signUp.bind(mainController))
   app.get('/api/me', mainController.getMe.bind(mainController))
+  app.get('/api/games-list', mainController.gamesList.bind(mainController))
   app.get('/api/game-state', mainController.getGameState.bind(mainController))
   app.post('/api/start-game', mainController.startGame.bind(mainController))
   app.post('/api/leave-game', mainController.leaveGame.bind(mainController))

@@ -100,6 +100,7 @@ class Game {
 
     socket.on('gameUpdate', (data) => {
       this._data = data
+      console.log(data)
       app.innerHTML = render(data)
     })
   }

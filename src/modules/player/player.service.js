@@ -90,7 +90,7 @@ export class PlayerService {
    * @param {string} playerEmail - The email address of the player to reset the hand for.
    */
   async resetHands(playerEmail) {
-    if (!this._player) await this.loadPlayerByEmail(playerEmail)
+    await this.loadPlayerByEmail(playerEmail)
 
     const player = this._repo.clone(this._player)
 
