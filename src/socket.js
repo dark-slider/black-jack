@@ -46,7 +46,7 @@ export const initializeSocket = server => {
             player: await mainController.playerService.loadPlayerByEmail(decoded.email)
           }
 
-          await mainController.leaveGame(req, {})
+          await mainController.leaveGame(req)
         }
       })
       console.log('User disconnected.')
