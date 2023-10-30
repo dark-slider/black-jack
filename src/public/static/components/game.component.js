@@ -100,7 +100,7 @@ const gameComponent = async () => {
     ${gameData.dealerCards.toString() && `
         <div class="playerCard">
             <p>Name: Dealer ${gameData.winnerIds.includes('dealer') ? '<span style="color: green">Winner</span>' : ''}</p>
-            <p>Total: ${gameData.dealerTotal}</p>
+            <p>Total: <span ${gameData.dealerTotal > 21 ? 'style="color: red"' : ''}>${gameData.dealerTotal}</span></p>
             <p>Cards:</p>
             ${renderCards(gameData.dealerCards)}
         </div>
